@@ -7,10 +7,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MaxToyberman/react-native-fingerprint-change"
+  },
   "keywords": [
     "react-native"
   ],
-  "author": "Max Toyberman",
+  "author": "Max Toyberman <maxtoyberman@gmail.com>",
   "license": "",
   "peerDependencies": {
     "react-native": "^0.41.2"
