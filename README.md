@@ -5,7 +5,6 @@
 
 `$ npm install react-native-fingerprint-change --save`
 
-Note: This module works only for iOS for now
 ### Mostly automatic installation
 
 `$ react-native link react-native-fingerprint-change`
