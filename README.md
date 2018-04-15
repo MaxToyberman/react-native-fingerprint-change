@@ -39,13 +39,51 @@
 ```javascript
 import RNFingerprintChange from 'react-native-fingerprint-change';
 
-// TODO: What to do with the module?
-
+// How to use the module 
 RNFingerprintChange.hasFingerPrintChanged((error, fingerprintHasChanged)=>{
 	if(fingerprintHasChanged) {
 		// do what you need when fingerprint change has been detected
 	}
 })
-		
+
+
+example:
+
+import {
+    AppState,
+} from 'react-native';
+
+import RNFingerprintChange from 'react-native-fingerprint-change';
+
+
+class example extends Component {
+
+	constructor(props) {
+		super(props)
+		this.state = {
+			appState: AppState.currentState,
+		}
+	}
+
+	componentDidMount() {
+        AppState.addEventListener('change', this._handleAppStateChange);
+	}
+
+	componentWillUnmount() {
+    	AppState.removeEventListener('change', this._handleAppStateChange);
+    }
+
+	_handleAppStateChange = (nextAppState) => {
+		if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
+			//App has come to the foreground!
+			RNFingerprintChange.hasFingerPrintChanged((error) => {},(fingerprintHasChanged)=>{
+			if(fingerprintHasChanged) {
+				// do what you need 
+			}
+		})
+		}
+		this.setState({appState: nextAppState});
+	}
+}
 ```
   
