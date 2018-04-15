@@ -11,7 +11,7 @@
 RCT_EXPORT_MODULE()
 
 
-RCT_EXPORT_METHOD(hasFingerPrintChanged:(RCTResponseSenderBlock)callback)
+RCT_EXPORT_METHOD(hasFingerPrintChanged:(RCTResponseSenderBlock)errorCallback successCallback:(RCTResponseSenderBlock)successCallback)
 {
     BOOL changed = NO;
 
@@ -43,7 +43,7 @@ RCT_EXPORT_METHOD(hasFingerPrintChanged:(RCTResponseSenderBlock)callback)
     [defaults setObject:domainState forKey:@"domainTouchID"];
     [defaults synchronize];
     
-    callback(@[[NSNumber numberWithBool:changed]]);
+    successCallback(@[[NSNumber numberWithBool:changed]]);
 }
 
 @end
