@@ -1,5 +1,5 @@
 
-package com.reactlibrary;
+package com.toyberman.fingerprintChange;
 
 import java.util.Arrays;
 import java.util.Collections;
