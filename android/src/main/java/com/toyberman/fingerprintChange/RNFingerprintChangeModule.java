@@ -81,7 +81,7 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
 
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             errorCallback.invoke(e.getMessage());
-            throw new RuntimeException("Failed to get an instance of Cipher", e);
+            return;
         }
         if (initCipher(defaultCipher, DEFAULT_KEY_NAME)) {
             Log.d("AIFingerprint", "fingerprint ok");
