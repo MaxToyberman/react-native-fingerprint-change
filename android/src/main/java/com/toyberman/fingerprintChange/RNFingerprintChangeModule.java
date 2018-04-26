@@ -48,21 +48,23 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
         // enrolled fingerprints has changed.
         try {
             mKeyStore = KeyStore.getInstance("AndroidKeyStore");
-        } catch (KeyStoreException e) {
-            throw new RuntimeException("Failed to get an instance of KeyStore", e);
-        }
-        try {
+
             mKeyGenerator = KeyGenerator
                     .getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
-        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
-            throw new RuntimeException("Failed to get an instance of KeyGenerator", e);
-        }
 
-        spref = PreferenceManager.getDefaultSharedPreferences(reactContext);
-        //when initializing the app we want to create the key only one so we can detect changes
-        if (spref.getBoolean(INIT_KEYSTORE,true)) {
-            createKey(DEFAULT_KEY_NAME, true);
-            spref.edit().putBoolean(INIT_KEYSTORE, false).apply();
+            spref = PreferenceManager.getDefaultSharedPreferences(reactContext);
+            //when initializing the app we want to create the key only one so we can detect changes
+            if (spref.getBoolean(INIT_KEYSTORE,true)) {
+                createKey(DEFAULT_KEY_NAME, true);
+                spref.edit().putBoolean(INIT_KEYSTORE, false).apply();
+            }
+            
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
         }
 
     }
