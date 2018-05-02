@@ -1,7 +1,9 @@
 package com.toyberman.fingerprintChange;
 
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.hardware.fingerprint.FingerprintManager;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.security.keystore.KeyGenParameterSpec;
@@ -11,7 +13,6 @@ import android.util.Log;
 
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 
@@ -42,6 +43,10 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
     public RNFingerprintChangeModule(ReactApplicationContext reactContext) {
         super(reactContext);
         this.reactContext = reactContext;
+        //check if device has fingerprint
+        if (!hasFingerprintHardware(reactContext)) {
+            return;
+        }
 
         // The enrolling flow for fingerprint. This is where you ask the user to set up fingerprint
         // for your flow. Use of keys is necessary if you need to know if the set of
@@ -54,11 +59,11 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
 
             spref = PreferenceManager.getDefaultSharedPreferences(reactContext);
             //when initializing the app we want to create the key only one so we can detect changes
-            if (spref.getBoolean(INIT_KEYSTORE,true)) {
+            if (spref.getBoolean(INIT_KEYSTORE, true)) {
                 createKey(DEFAULT_KEY_NAME, true);
                 spref.edit().putBoolean(INIT_KEYSTORE, false).apply();
             }
-            
+
         } catch (KeyStoreException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
@@ -71,31 +76,50 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
 
 
     @ReactMethod
-    public void hasFingerPrintChanged(Callback errorCallback,Callback successCallback) {
+    public void hasFingerPrintChanged(Callback errorCallback, Callback successCallback) {
 
         Cipher defaultCipher;
+
+
         try {
+
+            if (!hasFingerprintHardware(this.reactContext)) {
+                return;
+            }
+
             defaultCipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/"
                     + KeyProperties.BLOCK_MODE_CBC + "/"
                     + KeyProperties.ENCRYPTION_PADDING_PKCS7);
 
+
+            if (initCipher(defaultCipher, DEFAULT_KEY_NAME)) {
+                Log.d("AIFingerprint", "fingerprint ok");
+            } else {
+                if (this.reactContext != null) {
+                    //after we find a change in a fingerprint we need to reinitialize the keystore
+                    spref.edit().putBoolean(INIT_KEYSTORE, true).apply();
+                    createKey(DEFAULT_KEY_NAME, true);
+
+                    successCallback.invoke(true);
+                }
+            }
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
             errorCallback.invoke(e.getMessage());
             return;
         }
-        if (initCipher(defaultCipher, DEFAULT_KEY_NAME)) {
-            Log.d("AIFingerprint", "fingerprint ok");
-        } else {
-            if (this.reactContext != null) {
-                //after we find a change in a fingerprint we need to reinitialize the keystore
-                spref.edit().putBoolean(INIT_KEYSTORE, true).apply();
-                createKey(DEFAULT_KEY_NAME, true);
 
-                successCallback.invoke(true);
-            }
+    }
+
+    private boolean hasFingerprintHardware(Context mContext) {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            //Fingerprint API only available on from Android 6.0 (M)
+            FingerprintManager fingerprintManager = (FingerprintManager) mContext.getSystemService(Context.FINGERPRINT_SERVICE);
+
+            return fingerprintManager.isHardwareDetected();
+
         }
-
-
+        return false;
     }
 
     @Override
