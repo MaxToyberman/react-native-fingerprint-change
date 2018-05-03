@@ -9,7 +9,6 @@ import android.preference.PreferenceManager;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
-import android.util.Log;
 
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -93,7 +92,7 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
 
 
             if (initCipher(defaultCipher, DEFAULT_KEY_NAME)) {
-                Log.d("AIFingerprint", "fingerprint ok");
+                successCallback.invoke(false);
             } else {
                 if (this.reactContext != null) {
                     //after we find a change in a fingerprint we need to reinitialize the keystore
