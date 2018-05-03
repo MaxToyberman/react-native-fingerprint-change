@@ -16,35 +16,41 @@ RCT_EXPORT_METHOD(hasFingerPrintChanged:(RCTResponseSenderBlock)errorCallback su
     BOOL changed = NO;
 
     LAContext *context = [[LAContext alloc] init];
-    [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthentication error:nil];
-    
-    NSData *domainState = [context evaluatedPolicyDomainState];
-    
-    // load the last domain state from touch id
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSData *oldDomainState = [defaults objectForKey:@"domainTouchID"];
-    
-    if (oldDomainState)
-    {
-        // check for domain state changes
-        
-        if ([oldDomainState isEqual:domainState])
-        {
-            NSLog(@"nothing changed.");
-        }
-        else
-        {
-            changed = YES;
-            NSLog(@"domain state was changed!");
-        }
-    }
+    NSError *error = nil;
 
-    // save the domain state that will be loaded next time
-    [defaults setObject:domainState forKey:@"domainTouchID"];
-    [defaults synchronize];
     
-    successCallback(@[[NSNumber numberWithBool:changed]]);
+    if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error]) {
+        
+        [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthentication error:nil];
+        NSData *domainState = [context evaluatedPolicyDomainState];
+        
+        // load the last domain state from touch id
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        NSData *oldDomainState = [defaults objectForKey:@"domainTouchID"];
+        
+        if (oldDomainState)
+        {
+            // check for domain state changes
+            
+            if ([oldDomainState isEqual:domainState])
+            {
+                NSLog(@"nothing changed.");
+            }
+            else
+            {
+                changed = YES;
+                NSLog(@"domain state was changed!");
+            }
+        }
+
+        // save the domain state that will be loaded next time
+        [defaults setObject:domainState forKey:@"domainTouchID"];
+        [defaults synchronize];
+        
+        successCallback(@[[NSNumber numberWithBool:changed]]);
+    }
 }
+
 
 @end
   
