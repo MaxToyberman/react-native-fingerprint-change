@@ -138,7 +138,8 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
             return false;
         } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | IOException
                 | NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new RuntimeException("Failed to init Cipher", e);
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -186,7 +187,7 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
             mKeyGenerator.generateKey();
         } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException
                 | CertificateException | IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
     }
 
