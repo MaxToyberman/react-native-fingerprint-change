@@ -16,7 +16,6 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -63,11 +62,7 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
                 spref.edit().putBoolean(INIT_KEYSTORE, false).apply();
             }
 
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
+        } catch (KeyStoreException | NoSuchAlgorithmException | NoSuchProviderException e) {
             e.printStackTrace();
         }
 
@@ -185,10 +180,10 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
             }
             mKeyGenerator.init(builder.build());
             mKeyGenerator.generateKey();
-        } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException
-                | CertificateException | IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 
 }
