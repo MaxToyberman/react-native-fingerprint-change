@@ -5,24 +5,23 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.hardware.fingerprint.FingerprintManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.security.keystore.KeyGenParameterSpec;
-import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
+import android.support.v4.hardware.fingerprint.FingerprintManagerCompat;
 
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 
-import java.io.IOException;
-import java.security.InvalidKeyException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -34,6 +33,7 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
     private final ReactApplicationContext reactContext;
     private final String DEFAULT_KEY_NAME = "default_key";
     private final String INIT_KEYSTORE = "INIT_KEYSTORE";
+    private Cipher defaultCipher;
     private SharedPreferences spref;
     private KeyStore mKeyStore;
     private KeyGenerator mKeyGenerator;
@@ -46,10 +46,17 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
             return;
         }
 
+
         // The enrolling flow for fingerprint. This is where you ask the user to set up fingerprint
         // for your flow. Use of keys is necessary if you need to know if the set of
         // enrolled fingerprints has changed.
         try {
+
+            defaultCipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/"
+                    + KeyProperties.BLOCK_MODE_CBC + "/"
+                    + KeyProperties.ENCRYPTION_PADDING_PKCS7);
+
+
             mKeyStore = KeyStore.getInstance("AndroidKeyStore");
 
             mKeyGenerator = KeyGenerator
@@ -58,11 +65,13 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
             spref = PreferenceManager.getDefaultSharedPreferences(reactContext);
             //when initializing the app we want to create the key only one so we can detect changes
             if (spref.getBoolean(INIT_KEYSTORE, true)) {
-                createKey(DEFAULT_KEY_NAME, true);
+                createKeyWithHandler();
                 spref.edit().putBoolean(INIT_KEYSTORE, false).apply();
             }
 
         } catch (KeyStoreException | NoSuchAlgorithmException | NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
             e.printStackTrace();
         }
 
@@ -72,35 +81,23 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void hasFingerPrintChanged(Callback errorCallback, Callback successCallback) {
 
-        Cipher defaultCipher;
-
-
-        try {
-
-            if (!hasFingerprintHardware(this.reactContext)) {
-                return;
-            }
-
-            defaultCipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/"
-                    + KeyProperties.BLOCK_MODE_CBC + "/"
-                    + KeyProperties.ENCRYPTION_PADDING_PKCS7);
-
-
-            if (initCipher(defaultCipher, DEFAULT_KEY_NAME)) {
-                successCallback.invoke(false);
-            } else {
-                if (this.reactContext != null) {
-                    //after we find a change in a fingerprint we need to reinitialize the keystore
-                    spref.edit().putBoolean(INIT_KEYSTORE, true).apply();
-                    createKey(DEFAULT_KEY_NAME, true);
-
-                    successCallback.invoke(true);
-                }
-            }
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
-            errorCallback.invoke(e.getMessage());
+        if (!hasFingerprintHardware(this.reactContext)) {
             return;
         }
+
+
+        if (initCipher(defaultCipher, DEFAULT_KEY_NAME)) {
+            successCallback.invoke(false);
+        } else {
+            if (this.reactContext != null) {
+                //after we find a change in a fingerprint we need to reinitialize the keystore
+                spref.edit().putBoolean(INIT_KEYSTORE, true).apply();
+                //createKey(DEFAULT_KEY_NAME, true);
+                createKeyWithHandler();
+                successCallback.invoke(true);
+            }
+        }
+
 
     }
 
@@ -110,10 +107,22 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
             //Fingerprint API only available on from Android 6.0 (M)
             FingerprintManager fingerprintManager = (FingerprintManager) mContext.getSystemService(Context.FINGERPRINT_SERVICE);
 
-            return fingerprintManager.isHardwareDetected();
+            if (fingerprintManager == null) {
+                return false;
+            }
 
+            return fingerprintManager.isHardwareDetected();
+        } else {
+            // Supporting devices with SDK < 23
+            FingerprintManagerCompat fingerprintManager = FingerprintManagerCompat.from(getReactApplicationContext());
+
+            if (fingerprintManager == null) {
+                return false;
+            }
+
+            return fingerprintManager.isHardwareDetected();
         }
-        return false;
+
     }
 
     @Override
@@ -122,6 +131,25 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
     }
 
 
+    private void createKeyWithHandler() {
+        // This avoids on Samsung Galaxy Note 8, this bug:
+        // java.lang.RuntimeException: Can't create handler inside thread that has not called Looper.prepare()
+        // used to happen on "createKey(...)"
+        HandlerThread handlerThread = new HandlerThread("FingerPrintKeysHandlerThread");
+        handlerThread.start();
+        Looper looper = handlerThread.getLooper();
+        Handler handler = new Handler(looper);
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                createKey(DEFAULT_KEY_NAME, true);
+            }
+        });
+
+        handlerThread.quit();
+    }
+
     @TargetApi(Build.VERSION_CODES.M)
     private boolean initCipher(Cipher cipher, String keyName) {
         try {
@@ -129,13 +157,14 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
             SecretKey key = (SecretKey) mKeyStore.getKey(keyName, null);
             cipher.init(Cipher.ENCRYPT_MODE, key);
             return true;
-        } catch (KeyPermanentlyInvalidatedException e) {
-            return false;
-        } catch (KeyStoreException | CertificateException | UnrecoverableKeyException | IOException
-                | NoSuchAlgorithmException | InvalidKeyException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
-        }
+        } //catch (KeyStoreException | CertificateException | UnrecoverableKeyException | IOException
+        //      | NoSuchAlgorithmException | InvalidKeyException e) {
+        //  e.printStackTrace();
+        //  return false;
+        //}
     }
 
 
@@ -180,10 +209,15 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
             }
             mKeyGenerator.init(builder.build());
             mKeyGenerator.generateKey();
-        } catch (Exception e) {
-            e.printStackTrace();
+        }         // SemIrisManager.java line 948 BUG
+        // https://developer.samsung.com/forum/board/thread/view.do?boardName=SDK&messageId=335026&startId=zzzzz~
+        catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().equals("Can't create handler inside thread that has not called Looper.prepare()")) {
+                // failedOnNote8 = true;
+            }
         }
 
     }
+
 
 }
