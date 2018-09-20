@@ -33,7 +33,6 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
     private final ReactApplicationContext reactContext;
     private final String DEFAULT_KEY_NAME = "default_key";
     private final String INIT_KEYSTORE = "INIT_KEYSTORE";
-    private Cipher defaultCipher;
     private SharedPreferences spref;
     private KeyStore mKeyStore;
     private KeyGenerator mKeyGenerator;
@@ -81,10 +80,15 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void hasFingerPrintChanged(Callback errorCallback, Callback successCallback) {
 
+        Cipher defaultCipher;
+
         if (!hasFingerprintHardware(this.reactContext)) {
             return;
         }
 
+        defaultCipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/"		
+        + KeyProperties.BLOCK_MODE_CBC + "/"		
+        + KeyProperties.ENCRYPTION_PADDING_PKCS7);
 
         if (initCipher(defaultCipher, DEFAULT_KEY_NAME)) {
             successCallback.invoke(false);
