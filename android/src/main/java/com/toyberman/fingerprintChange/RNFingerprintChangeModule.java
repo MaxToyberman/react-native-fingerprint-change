@@ -50,12 +50,6 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
         // for your flow. Use of keys is necessary if you need to know if the set of
         // enrolled fingerprints has changed.
         try {
-
-            defaultCipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/"
-                    + KeyProperties.BLOCK_MODE_CBC + "/"
-                    + KeyProperties.ENCRYPTION_PADDING_PKCS7);
-
-
             mKeyStore = KeyStore.getInstance("AndroidKeyStore");
 
             mKeyGenerator = KeyGenerator
@@ -70,8 +64,6 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
 
         } catch (KeyStoreException | NoSuchAlgorithmException | NoSuchProviderException e) {
             e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
-            e.printStackTrace();
         }
 
     }
@@ -82,24 +74,31 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
 
         Cipher defaultCipher;
 
-        if (!hasFingerprintHardware(this.reactContext)) {
-            return;
-        }
 
-        defaultCipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/"		
-        + KeyProperties.BLOCK_MODE_CBC + "/"		
-        + KeyProperties.ENCRYPTION_PADDING_PKCS7);
+        try {
 
-        if (initCipher(defaultCipher, DEFAULT_KEY_NAME)) {
-            successCallback.invoke(false);
-        } else {
-            if (this.reactContext != null) {
-                //after we find a change in a fingerprint we need to reinitialize the keystore
-                spref.edit().putBoolean(INIT_KEYSTORE, true).apply();
-                //createKey(DEFAULT_KEY_NAME, true);
-                createKeyWithHandler();
-                successCallback.invoke(true);
+            if (!hasFingerprintHardware(this.reactContext)) {
+                return;
             }
+
+            defaultCipher = Cipher.getInstance(KeyProperties.KEY_ALGORITHM_AES + "/"
+                    + KeyProperties.BLOCK_MODE_CBC + "/"
+                    + KeyProperties.ENCRYPTION_PADDING_PKCS7);
+
+            if (initCipher(defaultCipher, DEFAULT_KEY_NAME)) {
+                successCallback.invoke(false);
+            } else {
+                if (this.reactContext != null) {
+                    //after we find a change in a fingerprint we need to reinitialize the keystore
+                    spref.edit().putBoolean(INIT_KEYSTORE, true).apply();
+                    //createKey(DEFAULT_KEY_NAME, true);
+                    createKeyWithHandler();
+                    successCallback.invoke(true);
+                }
+            }
+
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+
         }
 
 
