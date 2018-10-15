@@ -10,6 +10,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
 import android.support.v4.hardware.fingerprint.FingerprintManagerCompat;
 
@@ -58,7 +59,7 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
             spref = PreferenceManager.getDefaultSharedPreferences(reactContext);
             //when initializing the app we want to create the key only one so we can detect changes
             if (spref.getBoolean(INIT_KEYSTORE, true)) {
-                createKey(DEFAULT_KEY_NAME, true);
+                createKeyWithHandler();
                 spref.edit().putBoolean(INIT_KEYSTORE, false).apply();
             }
 
@@ -92,7 +93,7 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
                     //after we find a change in a fingerprint we need to reinitialize the keystore
                     spref.edit().putBoolean(INIT_KEYSTORE, true).apply();
                     //createKey(DEFAULT_KEY_NAME, true);
-                    createKey(DEFAULT_KEY_NAME, true);
+                    createKeyWithHandler();
                     successCallback.invoke(true);
                 }
             }
@@ -160,9 +161,13 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
             SecretKey key = (SecretKey) mKeyStore.getKey(keyName, null);
             cipher.init(Cipher.ENCRYPT_MODE, key);
             return true;
+        } catch (KeyPermanentlyInvalidatedException e) {
+            //fingerprint cahnged
+            return false;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            //return true instead of throwing Exception.(Continue as usual)
+            return true;
         } //catch (KeyStoreException | CertificateException | UnrecoverableKeyException | IOException
         //      | NoSuchAlgorithmException | InvalidKeyException e) {
         //  e.printStackTrace();
