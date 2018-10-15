@@ -58,7 +58,7 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
             spref = PreferenceManager.getDefaultSharedPreferences(reactContext);
             //when initializing the app we want to create the key only one so we can detect changes
             if (spref.getBoolean(INIT_KEYSTORE, true)) {
-                createKeyWithHandler();
+                createKey(DEFAULT_KEY_NAME, true);
                 spref.edit().putBoolean(INIT_KEYSTORE, false).apply();
             }
 
@@ -92,7 +92,7 @@ public class RNFingerprintChangeModule extends ReactContextBaseJavaModule {
                     //after we find a change in a fingerprint we need to reinitialize the keystore
                     spref.edit().putBoolean(INIT_KEYSTORE, true).apply();
                     //createKey(DEFAULT_KEY_NAME, true);
-                    createKeyWithHandler();
+                    createKey(DEFAULT_KEY_NAME, true);
                     successCallback.invoke(true);
                 }
             }
