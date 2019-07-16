@@ -1,7 +1,8 @@
 {
   "name": "react-native-fingerprint-change",
-  "version": "1.2.0",
-  "description": "",
+  "version": "1.2.1",
+  "description": "Detect fingerprint change (Addition or Removal of a fingerprint)",
+  "homepage": "https://github.com/MaxToyberman/react-native-fingerprint-change#readme",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -14,7 +15,7 @@
     "react-native"
   ],
   "author": "Max Toyberman <maxtoyberman@gmail.com>",
-  "license": "",
+  "license": "MIT",
   "peerDependencies": {
     "react-native": "^0.41.2"
   }
