@@ -1,6 +1,6 @@
 {
   "name": "react-native-fingerprint-change",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Detect fingerprint change (Addition or Removal of a fingerprint)",
   "homepage": "https://github.com/MaxToyberman/react-native-fingerprint-change#readme",
   "main": "index.js",
